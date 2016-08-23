@@ -1,49 +1,117 @@
+.footer l-box is-center ,
+.home-menu {
+	background: #0b2369;
+}
+
 #map{
 width:60%;
-height: 500px;
-float: left;
-padding: 10px; 
-
+height: 800px;
 }
-
 
 #info{
-width: 30%;
-height: 500px;
-float: left;
-padding: 10px;
-margin-left: 10px;
-text-align: center;
-
-}
-#board {
-	margin: 0 auto;
-	width: 100%;
+	width: 40%;
+	height: 800px;
+	margin: 0px;
+	padding: 0px;
+	line-height: 0px;
 }
 
-//pure css 버튼 세부 수정 -purecss.io/buttons/ 참조
+#time{
+	color:black;
+	font-weight:bold;
+	font-size: 15px;
+	height: 30px;
+	line-height:5px;
+}
+
+a{
+	color:white;
+	text-decoration: none;
+}
+
+
+
+
+/*pure css 버튼 세부 수정 -purecss.io/buttons/ 참조 */
+.pure-button {
+		        padding: .5em 1em;
+}
 
 .button-success,
         .button-error,
-        .button-warning,
-        .button-secondary {
+        .button-warning
+		{
             color: white;
             border-radius: 4px;
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+
         }
 
         .button-success {
-            background: rgb(28, 184, 65); /* this is a green */
+            background: rgb(28, 184, 0); /* this is a green */
+			
         }
 
         .button-error {
-            background: rgb(202, 60, 60); /* this is a maroon */
+            background: rgb(100,100,100); /* this is a maroon */
         }
 
         .button-warning {
             background: rgb(223, 117, 20); /* this is an orange */
         }
 
-        .button-secondary {
-            background: rgb(66, 184, 221); /* this is a light blue */
-        }
+
+.pure-g {
+	text-align:center;
+	letter-spacing: normal;
+}		
+
+.l-box pure-u-1 pure-u-md-1-2 pure-u-lg-1-2{
+	margin: 0px;
+}
+
+.pure-u-1-4 {
+	margin: 0px;
+	padding: 0px;
+	border: 1px;
+	border-color: black;
+
+}
+
+@media screen and (min-width: 960px){
+
+}
+
+@media screen and (min-width: 768px) and (max-width: 959px){
+#map{
+width:66%;
+}
+#info {
+	width:33%;
+}
+}
+
+@media screen and (max-width: 767px){
+#map {
+	width:100%;
+	height:370px
+}
+#info {
+	width:100%;
+	height:100%;
+}
+#title { display:none;
+}
+}
+
+html,body{
+	height:100%;
+}
+.content-wrapper{
+
+	max-height:90%;
+	font-size:13px;
+}
+.footer{
+	background-color:#0b2369;
+}

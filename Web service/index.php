@@ -3,19 +3,22 @@
 //DB 연결
 include "header.php";
 include "db_info.php";
-//주행 조건이 있는지 확인하고 쿼리문에 추가할 텍스트 할당
-if ($_GET['state'] == "") {
-$add= "";}
-	else {	
-$add= "where state= '".$_GET['state']."'";
+//주행 조건을 쿼리에 추가한다.
+if ($_GET['service'] == "yes") {
+$add= "where service= 'yes'";}
+elseif ($_GET['service'] == "no") {	
+$add= "where service= 'no'";
 }
 
-$query = "SELECT * FROM carInfo $add order by state desc, pred asc";
-$query3 = "SELECT * FROM carInfo where state='stop' and pred > 1 order by pred";
-$result = mysql_query($query, $conn); //정보창 표시용
+$query = "SELECT * FROM carInfo INNER JOIN carnum ON carInfo.num = carnum.carid $add order by state desc, pred asc, bat asc";
+$query3 = "SELECT * FROM carInfo where service='yes' order by pred asc, bat asc";
+$result = mysql_query($query, $conn); 
+//정보창 표시용
 $result2 = mysql_query($query, $conn);  //네이버 지도 차량 표시용
 $result3 = mysql_query($query3, $conn); //네이버 지도 주차 차량 동선 및 티맵 API 용
 $num = 1;
+$park_count = mysql_num_rows($result3);  //주차 차량
+$car_count = mysql_num_rows($result);   //모든 차량
 ?>
 
 <html>
@@ -28,7 +31,7 @@ $num = 1;
     <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?clientId=zfGDFt_miJ8FZG7V80s9"></script>
 </head>
 <body>
-<div class="content-wrapper" style="top:7%;">
+<div class="content-wrapper" style="top:60px;">
 
 <div class="pure-g">
 <!--네이버 지도 출력할 DIV 생성-->
@@ -37,30 +40,46 @@ $num = 1;
 <div id="info" class="pure-u-1 pure-u-md-1-3">
 
 <!--티맵 API 출력-->
-<div class="pure-g">
-    <div class="pure-u-1-1"><p id="time" style="font-weight:bold;color:black;"></p></div>
-</div>
-<div class="pure-g" style="background-color:gray; color:white;">
-    <div class="pure-u-1-4"><p>차량번호</p></div>
-    <div class="pure-u-1-4"><p>주행상태</p></div>
-    <div class="pure-u-1-4"><p>배터리</p></div>
-	<div class="pure-u-1-4"><p>남은 주차시간</p></div>
-</div>
-<?
+<table class="pure-table pure-table-horizontal" style="width:100%;text-align:center;">
+
+	<thead>
+	
+        <tr>
+            <th colspan="5" id="time"></th>
+  
+        </tr>
+    </thead>
+
+    <tbody>
+	        <tr style="color:black;font-weight:bold;">
+            <td>차량 번호</td>
+            <td>현재 위치</td>
+            <td>주행 상태</td>
+            <td> 배터리 </td>
+			<td>예상 주차시간</td>
+        </tr>
+	<?
 while($row=mysql_fetch_array($result))
 {
 ?>
-<div class="pure-g">
-    <div class="pure-u-1-4"><p><?=$num?></p></div>
-    <div class="pure-u-1-4"><p><?=$row[state]?></p></div>
-    <div class="pure-u-1-4"><p><?=$row[bat]?>%</p></div>
-	<div class="pure-u-1-4"><p><?=$row[pred]?></p></div>
-</div>
+        <tr>
+            <td><?=$row[carnumber]?></td>
+            <td id="ad<?=$num?>"></td>
+            <td><? if ($row[state] =="drive") {
+								echo "주행 중"; }
+								else { echo "주차 중"; 
+								}	?></td>
+            <td><?=$row[bat]?>%</td>
+			<td><?=$row[pred]?></td>
+			</tr>
 <?
 $num = $num +1;
 } 
 $num =1;
 ?>
+			
+			</tbody>
+</table>
 </div>
 
 
@@ -84,6 +103,7 @@ var map = new naver.maps.Map('map', {
 var trafficLayer = new naver.maps.TrafficLayer({
     interval: 2000 // 2초마다 새로고침
 });
+
 //영등포구청 전기차 충전소
 var marker<?=$num?> = new naver.maps.Marker({
     position: new naver.maps.LatLng(37.5247471, 126.8954544),
@@ -111,12 +131,7 @@ var marker<?=$num?> = new naver.maps.Marker({
     title: 'A',
 	   map: map,
     icon: {
-        content: '<div><img src="'+ HOME_PATH +'/img/<? if ($row[state] == drive) {
-	  echo "drive"	; }
-	  else {
-	  echo "stop";}
-
-?>.png" alt="" ' +
+        content: '<div><img src="'+ HOME_PATH +'/img/<?=$row[service]?>.png" alt="" ' +
                  'style="margin: 0px; padding: 0px; border: 0px solid transparent; display: block; max-width: none; max-height: none; ' +
                  '-webkit-user-select: none; position: relative; width: 50px; height: 30px; left: 0px; top: 0px;"></div><div style="margin: 0px; padding: 0px; border: 0px solid transparent; display: block; max-width: none; max-height: none; ' +
                  '-webkit-user-select: none; position: absolute; width: 50px; height: 30px; left: 0px; top: 10px; text-align:center; color:white; font-size: 12px"><?=$row[bat]?></div>',
@@ -129,15 +144,7 @@ var marker<?=$num?> = new naver.maps.Marker({
 
 
 var infowindow<?=$num?> = new naver.maps.InfoWindow({
-    content: '<div><? if ($row[state] == drive) {
-	  echo "주행 중"	; }
-	  else {
-	  if ($row[pred] < 1) {
-      echo $row[pred],"1시간 내 주행 예정" ;}
-	  else {
-		echo " 시간 주차 예정";
-	  }
-	  } ?> </div>',
+    content: '<div><?=$row[carnumber]?> </div>',
 	maxWidth: 0,
     backgroundColor: "#eee",
     borderColor: "#2db400",
@@ -154,78 +161,79 @@ naver.maps.Event.addListener(marker<?=$num?>, "click", function(e) {
     }
 });
 
-// infowindow<?=$num?>.open(map, marker<?=$num?>);
+
 <?
 $num = $num +1;
 } 
 $num =1;
 ?>
-
+infowindow1.open(map, marker1);
 //trafficLayer.setMap(map);
 
-
 //충전 서비스 운행 라인을 맵에 표시
-var polyline = new naver.maps.Polyline({
-    map: map,
-    path: [
-       new naver.maps.LatLng(37.5247471, 126.8954544),
-	<?
-while($row=mysql_fetch_array($result3))
-{
-?> 
- new naver.maps.LatLng(<?=$row[lat]?>, <?=$row[lon]?>),	
-<?
-$num = $num +1;
-} 
-$num =1;
-?>
-    ]
-});
 
 </script>
 <!--네이버 지도 API 끝-->
 
-<!--거리 계산 & 소요 시간 계산 - 티맵 API 이용을 위한 변수 설정-->
+
+<!-- 다중경로 티맵 API 콜을 위한 변수 및 경로리스트 작성 -->
 <?
-$car_count = mysql_num_rows($result);
-$startX = mysql_result($result,0,2);
-$startY = mysql_result($result,0,1);
-$endX = mysql_result($result,$car_count -1,2);
-$endY = mysql_result($result,$car_count -1,1);
+$appkey="d47869af-465d-38ec-8d7a-99b625292a24";
+for ($x = 0; $x <= $park_count -1; $x++) {
+$passlistX[$x] = mysql_result($result,$x,2);
+$passlistY[$x] = mysql_result($result,$x,1);
+}
 ?>
-
-
-
-<? echo "startX".$startX.", startY".$startY ?>
-<? echo "endX".$endX.", endY".$endY ?>
+<?
+for ($x = 1; $x <= $park_count -3; $x++) {
+$passlist = $passlist.$passlistX[$x].",".$passlistY[$x]."_";
+}
+$passlist = $passlist.$passlistX[$park_count -2].",".$passlistY[$park_count -2];
+?>
 <!--티맵 API 시작-->
 <script type = "text/javascript" 
          src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 		
- <script type = "text/javascript" language = "javascript">
- 
-var params = "version=1&reqCoordType=WGS84GEO"
-params += "&startX=<?=$startX?>&startY=<?=$startY?>"
-params += "&endX=<?=$endX?>&endY=<?=$endY?>&appKey=d47869af-465d-38ec-8d7a-99b625292a24"
 
-$.ajax({ 
-type : "POST",
-url : "https://apis.skplanetx.com/tmap/routes",
-data : params,
-dataType:"JSON",
-success : function(data) { 
-var time = data.features[0].properties.totalTime
-var distance = data.features[0].properties.totalDistance
-if (time < 3600) {
-$('#time').text("총 소요시간: "+parseInt(time/60)+"분"+" "+time%60+"초"+", 총 거리: "+distance); }  //시간을 분,초 로 표시한다
-}, 
-error : function(xhr, status, error) { 
-alert(error) 
-} 
+	  
+<script>
+var tmapAPI = "https://apis.skplanetx.com/tmap/routes?version=1&reqCoordType=WGS84GEO&startX="
+tmapAPI +="<?=$passlistX[0]?>&startY=<?=$passlistY[0]?>&endX=<?=$passlistX[$park_count -1]?>&endY="
+tmapAPI +="<?=$passlistY[$park_count -1]?>&appKey=<?=$appkey?>&passList=<?=$passlist?>";
+
+ $.getJSON(tmapAPI, function (json) {
+var time = json.features[0].properties.totalTime
+var distance = json.features[0].properties.totalDistance
+$('#time').text("총 소요시간: "+parseInt(time/60)+"분"+" "+time%60+"초"+", 총 거리: "+(distance/1000).toFixed(1)+" km");
 });
-      </script>
+</script>
+
+<!--역Geo코딩 호출 -->
+<?
+for ($x = 0; $x <= $car_count -1; $x++) {
+$carlistX[$x] = mysql_result($result,$x,2);
+$carlistY[$x] = mysql_result($result,$x,1);
+?>
+<script>
+var reversegeoAPI = "https://apis.skplanetx.com/tmap/geo/reversegeocoding?version=1&format=json&appKey=<?=$appkey?>&addressType=A10&lat=<?=$carlistY[$x]?>&lon=<?=$carlistX[$x]?>&coordType=WGS84GEO";
+
+ $.getJSON(reversegeoAPI, function (json) {
+var ad = json.addressInfo.legalDong+" "+json.addressInfo.buildingName;
+$('#ad<?=$x?>').text(ad);
+});
+</script>
+<?
+}
+?>
+  
 <!--티맵 API 끝-->
+
+
+<div class="footer l-box is-center">
+       <a> HYUNDAI MOTOR GROUP _ The First Hackathon</a></br><a>CONNECT THE</a> <a style="text-decoration: overline;">un</a><a>CONNECTED _ Team UDT </a>
+    </div>
 </div>
+
 </div>
 
 </body>
